@@ -133,44 +133,6 @@ if __name__ == '__main__':
 
         pop_id += 1
         
-        
-        
-        
-    
-    """
-    pop
-Out[14]: <peas.methods.neat.NEATPopulation at 0xb791770>
-
-pop.population
-Out[15]: <generator object population at 0x0B4EC0D0>
-
-for indiv in pop.population:
-    print(repr(indiv))
-    
-<peas.methods.neat.NEATGenotype object at 0x0B791C30>
-
-ngo = pop.population[0]
-Traceback (most recent call last):
-
-  File "<ipython-input-17-100303e61e33>", line 1, in <module>
-    ngo = pop.population[0]
-
-TypeError: 'generator' object has no attribute '__getitem__'
-
-
-for indiv in pop.population:
-    ngo = indiv
-
-ngo
-Out[19]: <peas.methods.neat.NEATGenotype at 0xb791c30>
-
-ngo.visualize('fgsfds.png')
-
-poplist = list(pop.population)
-
-poplist[0]
-Out[22]: <peas.methods.neat.NEATGenotype at 0xb791c30>
-"""
 
     #return results
 

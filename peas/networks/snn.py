@@ -5,6 +5,7 @@
 
 import sys
 import numpy as np
+import graphviz_plot as gpv
 np.seterr(over='ignore', divide='raise')
 
 # Local class
@@ -229,30 +230,30 @@ class SpikingNeuralNetwork(object):
                     self.make_feedforward()
             except AttributeError:
                 raise Exception("Cannot convert from %s to %s" % (source.__class__, self.__class__))
-
-#    def make_sandwich(self):
-        """ Turns the network into a sandwich network,
-            a network with no hidden nodes and 2 layers.
-        """
+    """
+    def make_sandwich(self):
+        # Turns the network into a sandwich network,
+        # a network with no hidden nodes and 2 layers.
+        
         self.sandwich = True
         self.cm = np.hstack((self.cm, np.zeros(self.cm.shape)))
         self.cm = np.vstack((np.zeros(self.cm.shape), self.cm))
         self.act = np.zeros(self.cm.shape[0])
         return self
-        
-#    def num_nodes(self):
+    """   
+    def num_nodes(self):
         return self.cm.shape[0]
-        
-#    def make_feedforward(self):
-        """ Zeros out all recursive connections. 
-        """
+    """    
+    def make_feedforward(self):
+        # Zeros out all recursive connections. 
         if np.triu(np.nan_to_num(self.cm)).any():
             raise Exception("Connection Matrix does not describe feedforward network. \n %s" % np.sign(self.cm))
         self.feedforward = True
         self.cm[np.triu_indices(self.cm.shape[0])] = 0
-        
+    """
+    
     def flush(self): # REWRITE
-        """ Reset activation values. """
+        # Reset activation values.
         self.act = np.zeros(self.cm.shape[0])
         
     def feed(self, input_activation, add_bias=True, propagate=1):
@@ -321,146 +322,11 @@ class SpikingNeuralNetwork(object):
         return '\n'.join([''.join(l) + '|' for l in s])
 
     
-#    def visualize(self, filename, inputs=4, outputs=4, plot_bias=0):
-        """ Visualize the network, stores in file. """
-        if self.cm.shape[0] > 50:
-            return
-        import pygraphviz as pgv
-        # Some settings
-        # inputs=self.inputs, outputs=self.outputs
-        node_dist = 1
-        cm = self.cm.copy()
-        # Sandwich network have half input nodes.
-        if self.sandwich:
-            inputs = cm.shape[0] // 2
-            outputs = inputs
-        # Clear connections to input nodes, these arent used anyway
+    def visualize_cppn(self, filename, inputs=4, outputs=1, plot_bias=0):
+        gpv.visualize_cppn(self, filename, inputs=4, outputs=1, plot_bias=0)
         
-        G = pgv.AGraph(directed=True)
-        mw = abs(cm).max()
-        # # this prints bias node explicitly (when bias_as_node=True):
-        # # if uncommenting, make sure the nodes' indexing is correct - 
-        # # change how nodes are indexed in the code below for inputs/outputs:    
-        # G.add_node(0)
-        # G.get_node(0).attr['label'] = '0:bias'
-        # G.get_node(0).attr['shape'] = 'pentagon'
-        # bias_pos = (0, -node_dist*2)
-        # G.get_node(0).attr['pos'] = '%s,%s!' % bias_pos
-        
-        # this code has been modified to exclude 1st column of cm matrix which is padded there as weights from 0-th node (bias)
-        if not plot_bias:
-            index_shift = 1
-        else:
-            index_shift = 0
-            
-        for i in range(index_shift,cm.shape[0]):
-            # shifting i by 1 to get types of real nodes bypassing node-0 that is 'bias'
-            
-            G.add_node(i-index_shift)
-            t = self.node_types[i].__name__
-            G.get_node(i-index_shift).attr['label'] = '%d:%s' % (i-index_shift, t[:3])
-            for j in range(index_shift,cm.shape[1]):
-                w = cm[i,j]
-                # print "~PyGraphViz. Connecting nodes ",i-index_shift,"and",j-index_shift,"with w =",w
-                if abs(w) > 0.01:
-                    G.add_edge(j-index_shift, i-index_shift, penwidth=abs(w)/mw*4, color='blue' if w > 0 else 'red')
-        for n in range(0,inputs):
-            pos = (node_dist*n, 0)
-            G.get_node(n).attr['pos'] = '%s,%s!' % pos
-            G.get_node(n).attr['shape'] = 'doublecircle'
-            G.get_node(n).attr['fillcolor'] = 'steelblue'
-            G.get_node(n).attr['style'] = 'filled'
-            # print "INPUT: i=",i,"n=",n
-            # print "~~~PyGraphViz: Added",n,"-th input node at (",pos,")"
-            # print "~PyGraphViz. Making Input node #",n
-        for i,n in enumerate(range(cm.shape[0] - outputs - index_shift,cm.shape[0] - index_shift)):
-            pos = (node_dist*i, -node_dist * 5)
-            G.get_node(n).attr['pos'] = '%s,%s!' % pos
-            G.get_node(n).attr['shape'] = 'doublecircle'
-            G.get_node(n).attr['fillcolor'] = 'tan'
-            G.get_node(n).attr['style'] = 'filled'
-            # print "~~~PyGraphViz: Added",n,"-th output node at (",pos,")"
-            # print "~PyGraphViz. Making Output node #",n
-        
-        # G.node_attr['shape'] = 'star'
-        if self.sandwich: 
-            # neato supports fixed node positions, so it's better for
-            # sandwich networks
-            prog = 'neato'
-        else:
-            prog = 'dot'
-            
-        G.draw(filename, prog=prog)
-        
-        
-#    def visualize_grid(self, filename, input_grid, output_grid):
-        """ Visualize the network, stores in file. """
-        if self.cm.shape[0] > 50:
-            return
-        import pygraphviz as pgv
-        # Some settings
-        # inputs=self.inputs, outputs=self.outputs
-        # node_dist = 1
-        cm = self.cm.copy()
-        # Sandwich network have half input nodes.
-        if self.sandwich:
-            inputs = cm.shape[0] // 2
-            outputs = inputs
-        # Clear connections to input nodes, these arent used anyway
-        
-        G = pgv.AGraph(directed=True,strict=True)
-        mw = abs(cm).max()
-            
-        for i in range(0,cm.shape[0]):
-            # shifting i by 1 to get types of real nodes bypassing node-0 that is 'bias'
-            
-            G.add_node(i)
-            t = self.node_types[i].__name__
-            G.get_node(i).attr['label'] = '%d:%s' % (i, t[:3])
-            for j in range(0,cm.shape[1]):
-                w = cm[i,j]
-                # print "~PyGraphViz. Connecting nodes ",i-index_shift,"and",j-index_shift,"with w =",w
-                if abs(w) > 0.01:
-                    G.add_edge(j, i, penwidth=abs(w)/mw*4, color='blue' if w > 0 else 'red')
-        for n in range(0,len(input_grid)):
-            # pos = (node_dist*n, 0)
-            pos = input_grid[n]
-            #print pos
-            G.get_node(n).attr['pos'] = '%s,%s!' % (pos[0],pos[1])
-            G.get_node(n).attr['shape'] = 'doublecircle'
-            G.get_node(n).attr['fillcolor'] = 'steelblue'
-            G.get_node(n).attr['style'] = 'filled'
-            # print "INPUT: i=",i,"n=",n
-            print "~~~PyGraphViz: Added",n,"-th input node at (",pos,")"
-            # print "~PyGraphViz. Making Input node #",n
-        for i,n in enumerate(range(cm.shape[0] - len(output_grid),cm.shape[0])):
-            # pos = (node_dist*i, -node_dist * 5)
-            print "Index (n-len(input_grid)) = ",n-len(input_grid)
-            pos = output_grid[n-len(input_grid)]
-            G.get_node(n).attr['pos'] = '%s,%s!' % (pos[0],pos[1])
-            G.get_node(n).attr['shape'] = 'doublecircle'
-            G.get_node(n).attr['fillcolor'] = 'tan'
-            G.get_node(n).attr['style'] = 'filled'
-            print "~~~PyGraphViz: Added",n,"-th output node at (",pos,")"
-            # print "~PyGraphViz. Making Output node #",n
-        
-        G.graph_attr['epsilon']='0.001'
-        # prog = 'dot'
-        # G.layout(prog=prog)
-        # print "Layout:",G.layout()
-        # for n in xrange(0,len(input_grid)+len(output_grid)):
-        #     print "Node",n,"is",G.get_node(n)
-        # G.node_attr['shape'] = 'star'
-        # if self.sandwich: 
-        #     # neato supports fixed node positions, so it's better for
-        #     # sandwich networks
-        #     prog = 'neato'
-        # else:
-        #     prog = 'dot'
-        
-        G.draw(filename,prog='fdp')
-        # G.draw(filename, prog=prog, args='-Goverlap=scale')
-
+    def visualize_snn(self, filename, input_grid, output_grid):
+        gpv.visualize_snn(self, filename, input_grid, output_grid)
         
     def __str__(self):
         return 'Neuralnet with %d nodes.' % (self.act.shape[0])
@@ -469,7 +335,7 @@ class SpikingNeuralNetwork(object):
 if __name__ == '__main__':
     # import doctest
     # doctest.testmod(optionflags=doctest.ELLIPSIS)
-    a = NeuralNetwork().from_matrix(np.array([[0,0,0],[0,0,0],[1,1,0]]))
+    a = SpikingNeuralNetwork().from_matrix(np.array([[0,0,0],[0,0,0],[1,1,0]]))
     print a.cm_string()
     print a.feed(np.array([1,1]), add_bias=False)
     

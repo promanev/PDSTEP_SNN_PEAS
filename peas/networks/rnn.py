@@ -281,7 +281,8 @@ class NeuralNetwork(object):
     def visualize_ann(self, filename, input_grid, output_grid):
         gpv.visualize_snn(self, filename, input_grid, output_grid)
 
-"""    
+    """
+    # Original PEAS method for drawing neural nets:    
     def visualize(self, filename, inputs=3, outputs=1):
         # Visualize the network, stores in file.
         if self.cm.shape[0] > 50:
@@ -327,10 +328,10 @@ class NeuralNetwork(object):
         else:
             prog = 'dot'
         G.draw(filename, prog=prog)
-        
+    """    
     def __str__(self):
         return 'Neuralnet with %d nodes.' % (self.act.shape[0])
-"""
+    
            
 
 if __name__ == '__main__':

@@ -5,7 +5,7 @@
 from .hyperneat import Substrate
 from .hyperneat import HyperNEATDeveloper as rnnDeveloper
 
-from ..networks.rnn import NeuralNetwork
+from ..networks.snn import SpikingNeuralNetwork
 import numpy as np
 
 class HyperNEATSNNDeveloper(rnnDeveloper):
@@ -17,7 +17,7 @@ class HyperNEATSNNDeveloper(rnnDeveloper):
         network = self._convert_and_validate_cppn(network)
         cm = self._make_connection_matrix(network)
 
-        net = NeuralNetwork().from_matrix(cm, node_types=[self.node_type])
+        net = SpikingNeuralNetwork().from_matrix(cm, node_types=[self.node_type])
         
         return net
             
