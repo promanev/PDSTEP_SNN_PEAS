@@ -1,0 +1,6 @@
+* Visualize ehas been taken out of the rnn class because it is used to plot different networks in parallel (CPPN and NN). Now there is a graphviz_plot.py containing separate functions for CPPN and NN plotting
+* There is a test file snn_test.py which is used to debug new code
+* There is a new test task called mapping.py which contains a simple mapping task from Prof. Rizzo's first homework. Maybe used to test evolution of a regular neural net (needs to be modified if an SNN will be used)
+* HyperNEATDeveloper class has been refactored to avoid confusion
+* HyperNEATSNNDeveloper is under development - should provide interface similar to HyperNEATDeveloper but working with snn.py instead of rnn.py
+* SNN class (snn.py) is under development - should incorporate a simple Izhikevich model of SNNs with similar interface to RNN class.
