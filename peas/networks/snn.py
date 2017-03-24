@@ -17,88 +17,95 @@ inf = float('inf')
 sqrt_two_pi = np.sqrt(np.pi * 2)
 
 # Neuron types:
+# Apperantly, this is a version of a regular spiking neuron with fast recovery (due to low d - reset of the leaking variable u)
+# For reference, see Izhikevich(2003), Figure 2, upper right corner.
+def fast_spike():
+    params = CustomStructure(a=0.1, b=0.2, c=-65.0, d=2.0, sign = -1)
+    return params
+
 def tonic_spike():
-    params = CustomStructure(a=0.02, b=0.2, c=-65.0, d=6.0)
+    params = CustomStructure(a=0.02, b=0.2, c=-65.0, d=6.0, sign = 1)
     return params
 
 def phasic_spike():
-    params = CustomStructure(a=0.02, b=0.25, c=-65.0, d=6.0)
+    params = CustomStructure(a=0.02, b=0.25, c=-65.0, d=6.0, sign = 1)
     return params
 
 def tonic_burst():
-    params = CustomStructure(a=0.02, b=0.2, c=-50.0, d=2.0)
+    params = CustomStructure(a=0.02, b=0.2, c=-50.0, d=2.0, sign = 1)
     return params
 
 def phasic_burst():
-    params = CustomStructure(a=0.02, b=0.25, c=-55.0, d=0.05)
+    params = CustomStructure(a=0.02, b=0.25, c=-55.0, d=0.05, sign = 1)
     return params
 
 def mixed():
-    params = CustomStructure(a=0.02, b=0.2, c=-55.0, d=4.0)
+    params = CustomStructure(a=0.02, b=0.2, c=-55.0, d=4.0, sign = 1)
     return params
 
 def fq_adapt():
-    params = CustomStructure(a=0.01, b=0.2, c=-65.0, d=8.0)
+    params = CustomStructure(a=0.01, b=0.2, c=-65.0, d=8.0, sign = 1)
     return params
 
 def class1():
-    params = CustomStructure(a=0.02, b=-0.1, c=-55.0, d=6.0)
+    params = CustomStructure(a=0.02, b=-0.1, c=-55.0, d=6.0, sign = 1)
     return params
 
 def class2():
-    params = CustomStructure(a=0.2, b=0.26, c=-65.0, d=0.0)
+    params = CustomStructure(a=0.2, b=0.26, c=-65.0, d=0.0, sign = 1)
     return params
 
 def spike_lat():
-    params = CustomStructure(a=0.02, b=0.2, c=-65.0, d=6.0)
+    params = CustomStructure(a=0.02, b=0.2, c=-65.0, d=6.0, sign = 1)
     return params
 
 def subthresh():
-    params = CustomStructure(a=0.05, b=0.26, c=-60.0, d=0.0)
+    params = CustomStructure(a=0.05, b=0.26, c=-60.0, d=0.0, sign = 1)
     return params
 
 def reson():
-    params = CustomStructure(a=0.1, b=0.26, c=-60.0, d=-1.0)
+    params = CustomStructure(a=0.1, b=0.26, c=-60.0, d=-1.0, sign = 1)
     return params
 
 def integr():
-    params = CustomStructure(a=0.02, b=-0.1, c=-55.0, d=6.0)
+    params = CustomStructure(a=0.02, b=-0.1, c=-55.0, d=6.0, sign = 1)
     return params
 
 def rebound_spike():
-    params = CustomStructure(a=0.03, b=0.25, c=-60.0, d=4.0)
+    params = CustomStructure(a=0.03, b=0.25, c=-60.0, d=4.0, sign = 1)
     return params
 
 def rebound_burst():
-    params = CustomStructure(a=0.03, b=0.25, c=-52.0, d=0.0)
+    params = CustomStructure(a=0.03, b=0.25, c=-52.0, d=0.0, sign = 1)
     return params
 # threshold variability:
 def thresh_var():
-    params = CustomStructure(a=0.03, b=0.25, c=-60.0, d=4.0)
+    params = CustomStructure(a=0.03, b=0.25, c=-60.0, d=4.0, sign = 1)
     return params
 
 def bistab():
-    params = CustomStructure(a=1.0, b=1.5, c=-60.0, d=0.0)
+    params = CustomStructure(a=1.0, b=1.5, c=-60.0, d=0.0, sign = 1)
     return params
 # depolarizng after-potential
 def dap():
-    params = CustomStructure(a=1.0, b=0.2, c=-60.0, d=-21.0)
+    params = CustomStructure(a=1.0, b=0.2, c=-60.0, d=-21.0, sign = 1)
     return params
 # accomodation:
 def accom():
-    params = CustomStructure(a=0.02, b=1.0, c=-55.0, d=4.0)
+    params = CustomStructure(a=0.02, b=1.0, c=-55.0, d=4.0, sign = 1)
     return params
 # inhibition-induced spiking:
 def ii_spike():
-    params = CustomStructure(a=-0.02, b=-1.0, c=-60.0, d=8.0)
+    params = CustomStructure(a=-0.02, b=-1.0, c=-60.0, d=8.0, sign = 1)
     return params    
 # inhibition-induced bursting:
 def ii_burst():
-    params = CustomStructure(a=-0.026, b=-1.0, c=-45.0, d=0.0)
+    params = CustomStructure(a=-0.026, b=-1.0, c=-45.0, d=0.0, sign = 1)
     return params    
 ### CONSTANTS ###
 
 NEURON_TYPES = {
+    'fast_spike': fast_spike,   
     'tonic_spike': tonic_spike,
     'phasic_spike': phasic_spike,    
     'tonic_burst': tonic_burst,    
@@ -145,83 +152,30 @@ class SpikingNeuralNetwork(object):
         self.u = np.zeros(self.cm.shape[0])
         # self.optimize()
         return self
-    """     
-    def from_neatchromosome(self, chromosome):
-        # Construct a network from a Chromosome instance, from
-        # the neat-python package. This is a connection-list
-        # representation.
-        
-        # TODO Deprecate the neat-python compatibility
-        # Typecheck
-        import neat.chromosome
-        
-        if not isinstance(chromosome, neat.chromosome.Chromosome):
-            raise Exception("Input should be a NEAT chromosome, is %r." % (chromosome))
-        # Sort nodes: BIAS, INPUT, HIDDEN, OUTPUT, with HIDDEN sorted by feed-forward.
-        nodes = dict((n.id, n) for n in chromosome.node_genes)
-        node_order = ['bias']
-        node_order += [n.id for n in filter(lambda n: n.type == 'INPUT', nodes.values())]
-        if isinstance(chromosome, neat.chromosome.FFChromosome):
-            node_order += chromosome.node_order
-        else:
-            node_order += [n.id for n in filter(lambda n: n.type == 'HIDDEN', nodes.values())]
-        node_order += [n.id for n in filter(lambda n: n.type == 'OUTPUT', nodes.values())]
-        # Construct object
-        self.cm = np.zeros((len(node_order), len(node_order)))
-        # Add bias connections
-        for id, node in nodes.items():
-            self.cm[node_order.index(id), 0] = node.bias
-            self.cm[node_order.index(id), 1:] = node.response
-        # Add the connections
-        for conn in chromosome.conn_genes:
-            if conn.enabled:
-                to = node_order.index(conn.outnodeid)
-                fr = node_order.index(conn.innodeid)
-                # dir(conn.weight)
-                self.cm[to, fr] *= conn.weight
-        # Verify actual feed forward
-        if isinstance(chromosome, neat.chromosome.FFChromosome):
-            if np.triu(self.cm).any():
-                raise Exception("NEAT Chromosome does not describe feedforward network.")
-        node_order.remove('bias')
-        self.node_types = [nodes[i].activation_type for i in node_order]
-        self.node_types = ['ident'] + self.node_types
-        self.act = np.zeros(self.cm.shape[0])
-        self.optimize()
-        return self
-    """
 
-    """
-    def optimize(self):
-        # If all nodes are simple nodes
-        if all(fn in SIMPLE_NODE_FUNCS for fn in self.node_types):
-            # Simply always sum the node inputs, this is faster
-            self.sum_all_node_inputs = True
-            self.cm = np.nan_to_num(self.cm)
-            # If all nodes are identical types
-            if all(fn == self.node_types[0] for fn in self.node_types):
-                self.all_nodes_same_function = True
-            self.node_types = [SIMPLE_NODE_FUNCS[fn] for fn in self.node_types]
-        else:
-            nt = []
-            for fn in self.node_types:
-                if fn in SIMPLE_NODE_FUNCS:
-                    # Substitute the function(x) for function(sum(x))
-                    nt.append(summed(SIMPLE_NODE_FUNCS[fn]))
-                else:
-                    nt.append(COMPLEX_NODE_FUNCS[fn])
-            self.node_types = nt
-    """
+
     
     def __init__(self, source=None):
         # Set instance vars
-        self.feedforward    = False
-        self.sandwich       = False   
-        self.cm             = None
-        self.node_types     = None
-        self.original_shape = None
-        self.sum_all_node_inputs = False
-        self.all_nodes_same_function = False
+        self.feedforward_connect  = True
+        self.self_connect         = False
+        self.hyperforward_connect = False
+        self.intralayer_connect   = False
+        self.recurr_connect       = False
+        self.hyperrecurr_connect  = False
+        self.cm                   = None
+        self.node_types           = None
+        self.n_nodes_input        = 12
+        self.n_nodes_output       = 12
+        self.original_shape       = None # Apparently this is the length of the side of a connectivity matrix (cm) = total number of neurons
+        self.weight_epsilon       = 1e-3 # Min.vlue of a synaptic weight for it to be considered for calculation 
+        # self.sum_all_node_inputs = False
+        # self.all_nodes_same_function = False
+        
+        # TO-DO: Need to write a procedure for initializing values v and u based on the node type assigned.
+        
+        # convert node names into functions:
+        self.convert_nodes()
         
         if source is not None:
             try:
@@ -230,17 +184,16 @@ class SpikingNeuralNetwork(object):
                     self.make_feedforward()
             except AttributeError:
                 raise Exception("Cannot convert from %s to %s" % (source.__class__, self.__class__))
-    """
-    def make_sandwich(self):
-        # Turns the network into a sandwich network,
-        # a network with no hidden nodes and 2 layers.
-        
-        self.sandwich = True
-        self.cm = np.hstack((self.cm, np.zeros(self.cm.shape)))
-        self.cm = np.vstack((np.zeros(self.cm.shape), self.cm))
-        self.act = np.zeros(self.cm.shape[0])
-        return self
-    """   
+
+
+    def convert_nodes(self):
+    # This method converts string-formatted names of neuron types into actual functions    
+        nt = []
+        for fn in self.node_types:
+            nt.append(NEURON_TYPES[fn])
+        self.node_types = nt
+            
+            
     def num_nodes(self):
         return self.cm.shape[0]
     """    
@@ -256,7 +209,94 @@ class SpikingNeuralNetwork(object):
         # Reset activation values.
         self.act = np.zeros(self.cm.shape[0])
         
-    def feed(self, input_activation, add_bias=True, propagate=1):
+    def feed(self, inputs):
+        """
+        This function runs the simulation of an SNN for one tick using forward Euler 
+        integration method wtih step 0.5 (2 summation steps). This approach is
+        used by Izhikevich (2003).
+        self - SNN object that should have all of the neuron types (parameters a, b, c ,d) 
+        as well as their v and u values. 
+        inputs - binary values that are fed into the input neurons. These input
+        values are then multiplied by weights between input neurons and hidden.
+        """
+        
+        # Some housekeeping:
+        n_nodes_all = self.num_nodes()
+        n_nodes_input = self.n_nodes_input
+        n_nodes_output = self.n_nodes_output
+        n_nodes_hidden = n_nodes_all - n_nodes_input - n_nodes_output
+        # get connectivity matrix:
+        cm = self.cm 
+        # minimum weight that is considered for calculation:
+        weight_epsilon = self.weight_epsilon    
+        # node types vector:
+        node_types = self.node_types
+        # vector with membrane potentials of all simulated neurons (hidden and output?):
+        v = self.v
+        # vector with recovery variables:
+        u = self.u
+        # List of fired neuron IDs:
+        fired_ids = []
+        # List of firing times:
+        # fired_times = [] This is not necessary because the ticks are out of hte scope of this function. Time of firings
+        # will be kept track of outside.
+        
+        # Input vector that contains all of the influences on the hidden and output neurons this time step
+        # Note: only hidden neurons and external inputs (processed by the input layer) can change this vector. Output neurons
+        # cannot do this as it is assumed that there are no recurrent connections.
+        I = np.zeros(n_nodes_hidden + n_nodes_output)
+        
+        # 1. Fill I with values from "inputs" using weights that connect input neurons with hidden:
+        for i in xrange(0, n_nodes_input):
+            for j in xrange(n_nodes_input, n_nodes_input + n_nodes_hidden):
+                if cm[i][j] > weight_epsilon: # skip the next step if the synaptic connection = 0 for speed
+                    I[j] += cm[i][j] * inputs[i]
+
+        
+        
+        # 2. Detect which neurons spike this time step (which did exceed threshold
+        # during the last time step).
+        # 
+        # Iterating over hidden and output neurons:                                                
+        for i in xrange(n_nodes_input, n_nodes_all):
+            if v[i]>30:
+                # Record these data for export out of the function:
+                fired_ids.append(i)
+                # get this node's params:
+                params = node_types[i]()  
+                # reset membrane potential and adjust leaking variable u:
+                v[i] = params.c
+                u[i]+= params.d
+                # !!!ONLY for HIDDEN neurons (because output neurons are assumed to not have connections to other output 
+                # neurons or hidden neurons) !!!
+                # Update input vector I:
+                if i < (n_nodes_all - n_nodes_output):    
+                    for j in xrange(0, n_nodes_hidden + n_nodes_output):
+                        if cm[i][j] > weight_epsilon: # skip the next step if the synaptic connection = 0 for speed
+                            I[j] += cm[i][j] * params.sign
+                    
+                
+    
+        # 3. Update u and v of all of the simulated neurons (hidden + output):
+        for i in xrange(n_nodes_input, n_nodes_all):
+            # get this node's params:
+            params = node_types[i]()
+            # Numerical integration using forward Euler method wiht step 0.5 for differential equations governing v and u:
+            for tick in xrange(0,1):
+                v[i] += 0.5 * v[i] ** 2 + 5 * v[i] + 140 - u[i]
+                
+            u[i] += params.a * (params.b * v[i] - u[i]) # It's unclear from Izhikevich's code if u should also updated in two steps or if it's updated once, after v was updated
+            
+        
+
+        # 4. Return ALL pertinent variables:
+        self.v = v
+        self.u = u
+
+        
+        
+        
+    def feed_old(self, input_activation, add_bias=True, propagate=1):
         """ Feed an input to the network, returns the entire
             activation state, you need to extract the output nodes
             manually.

@@ -4,7 +4,6 @@
 """
 
 ### IMPORTS ###
-import random
 
 # Libraries
 import numpy as np
@@ -33,7 +32,7 @@ class MatchRatesTask(object):
         if not self.do_all:
             pairs = [random.choice(pairs)]
         """    
-        rmse = 0.0
+        
         # number of simulation steps:
         max_t = 1000
         # number of output nodes:
@@ -44,7 +43,9 @@ class MatchRatesTask(object):
         # Array to sum all of the spikes on output neurons:
         firings = np.zeros(n_out_nodes)
         # Array to estimate firing rates exhibited during the simulation on the output neurons:
-        actual_firing_rates = np.zeros(n_out_nodes)    
+        actual_firing_rates = np.zeros(n_out_nodes)  
+        # Array to keep individual errors (per output neuron):
+        indv_error = np.zeros(n_out_nodes)    
         # Main cycle:
         for tick in xrange(0, max_t):
             # On the first tick, feed the SNN with preset inputs. 
@@ -54,24 +55,21 @@ class MatchRatesTask(object):
             else:
                 snn_state = network.feed(outputs)
             # Grab the output
-            output = snn_state[-n_out_nodes:]
+            outputs = snn_state[-n_out_nodes:]
             # keep track of spikes fired on output neurons:
             for out_idx in xrange(0, n_out_nodes):
-                firings[out_idx] += output[out_idx]
+                firings[out_idx] += outputs[out_idx]
                 
-        # estimate the firing rate on output neurons:
+        # estimate the firing rate on output neurons and calculate error:
         for out_idx in xrange(0, n_out_nodes):
             actual_firing_rates[out_idx] = firings[out_idx] / max_t
-            
-        err = (target - output)
-            err[abs(err) < self.EPSILON] = 0;
-            err = (err ** 2).mean()
-            # Add error
-            if verbose:
-                print "%r -> %r (%.2f)" % (i, output, err)
-            rmse += err 
-
-        score = 1/(1+np.sqrt(rmse / len(pairs)))
+            indv_error[out_idx] = self.target_firing_rates[out_idx] - actual_firing_rates[out_idx]
+            # zero out errors below epsilon value:
+            if abs(indv_error[out_idx])< self.EPSILON:
+                indv_error[out_idx] = 0
+                
+        err = (indv_error ** 2).mean()
+        score = 1/( 1+np.sqrt(err) )
         return {'fitness': score}
         
     def solve(self, network):
