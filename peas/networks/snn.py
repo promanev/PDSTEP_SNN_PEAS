@@ -136,25 +136,6 @@ class SpikingNeuralNetwork(object):
     """ A neural network. Can have recursive connections.
     """
     
-    def from_matrix(self, matrix, node_types=['class1']): # REWRITE
-        """ Constructs a network from a weight matrix. 
-        """
-        # Initialize net
-        self.original_shape = matrix.shape[:matrix.ndim//2]
-        # If the connectivity matrix is given as a hypercube, squash it down to 2D
-        n_nodes = np.prod(self.original_shape)
-        self.cm  = matrix.reshape((n_nodes,n_nodes))
-        self.node_types = node_types
-        if len(self.node_types) == 1:
-            self.node_types *= n_nodes
-        # inti variables u and v:    
-        self.v = np.zeros(self.cm.shape[0])
-        self.u = np.zeros(self.cm.shape[0])
-        # self.optimize()
-        return self
-
-
-    
     def __init__(self, source=None):
         # Set instance vars
         self.feedforward_connect  = True
@@ -164,24 +145,22 @@ class SpikingNeuralNetwork(object):
         self.recurr_connect       = False
         self.hyperrecurr_connect  = False
         self.cm                   = None
-        self.node_types           = None
-        self.n_nodes_input        = 12
-        self.n_nodes_output       = 12
+        self.node_types           = ['tonic_spike']
+        self.n_nodes_input        = 1
+        self.n_nodes_output       = 1
+        self.n_nodes_hidden       = 1
         self.original_shape       = None # Apparently this is the length of the side of a connectivity matrix (cm) = total number of neurons
-        self.weight_epsilon       = 1e-3 # Min.vlue of a synaptic weight for it to be considered for calculation 
-        # self.sum_all_node_inputs = False
-        # self.all_nodes_same_function = False
-        
-        # TO-DO: Need to write a procedure for initializing values v and u based on the node type assigned.
+        self.weight_epsilon       = 1e-3 # Min.vlue of a synaptic weight for it to be considered for calculation         
         
         # convert node names into functions:
-        self.convert_nodes()
+        # self.convert_nodes()
         
         if source is not None:
             try:
                 self.from_matrix(*source.get_network_data())
-                if hasattr(source, 'feedforward') and source.feedforward:
-                    self.make_feedforward()
+                # This attribute is no longer in use:
+                # if hasattr(source, 'feedforward') and source.feedforward:
+                #     self.make_feedforward()
             except AttributeError:
                 raise Exception("Cannot convert from %s to %s" % (source.__class__, self.__class__))
 
@@ -209,6 +188,38 @@ class SpikingNeuralNetwork(object):
         # Reset activation values.
         self.act = np.zeros(self.cm.shape[0])
         
+    def from_matrix(self, matrix, node_types=['class1']):
+        """ Constructs a network from a weight matrix. 
+        """
+        self.node_types = node_types
+        # make sure that node types are converted from str into function calls:
+        # print self.node_types    
+        self.convert_nodes()    
+        # print self.node_types
+        # Initialize net
+        self.original_shape = matrix.shape[:matrix.ndim//2]
+        # If the connectivity matrix is given as a hypercube, squash it down to 2D
+        n_nodes = np.prod(self.original_shape)
+        self.cm  = matrix.reshape((n_nodes,n_nodes))
+        
+        # n_nodes_input = self.n_nodes_input
+        n_nodes_output = self.n_nodes_output
+        n_nodes_hidden = self.n_nodes_hidden
+        # only hidden and output nodes are simulated. Keep track of this number:
+        n_nodes_sim = n_nodes_hidden + n_nodes_output
+        
+        # init variables u and v:    
+        self.v = np.ones(n_nodes_sim) * (-65.0)
+        self.u = np.zeros(n_nodes_sim)
+        # Create u values based on the neuron types. 
+        # Need to skip input neurons as they are not
+        # simulated:
+        for i in xrange(0, n_nodes_sim):
+            params = self.node_types[i]()
+            self.u[i] = self.v[i] * params.b
+
+        return self
+        
     def feed(self, inputs):
         """
         This function runs the simulation of an SNN for one tick using forward Euler 
@@ -220,15 +231,21 @@ class SpikingNeuralNetwork(object):
         values are then multiplied by weights between input neurons and hidden.
         """
         
+        # convert node names into functions:
+        # self.convert_nodes()
+        
         # Some housekeeping:
         n_nodes_all = self.num_nodes()
         n_nodes_input = self.n_nodes_input
         n_nodes_output = self.n_nodes_output
-        n_nodes_hidden = n_nodes_all - n_nodes_input - n_nodes_output
+        n_nodes_hidden = self.n_nodes_hidden
+        
         # get connectivity matrix:
-        cm = self.cm 
+        cm = self.cm
+        # print "CM shape:",cm.shape
         # minimum weight that is considered for calculation:
-        weight_epsilon = self.weight_epsilon    
+        weight_epsilon = self.weight_epsilon 
+        
         # node types vector:
         node_types = self.node_types
         # vector with membrane potentials of all simulated neurons (hidden and output?):
@@ -249,8 +266,10 @@ class SpikingNeuralNetwork(object):
         # 1. Fill I with values from "inputs" using weights that connect input neurons with hidden:
         for i in xrange(0, n_nodes_input):
             for j in xrange(n_nodes_input, n_nodes_input + n_nodes_hidden):
-                if cm[i][j] > weight_epsilon: # skip the next step if the synaptic connection = 0 for speed
-                    I[j] += cm[i][j] * inputs[i]
+                print "Accessing cm[",i,",",j,"]:"
+                print cm[i,j]
+                if cm[i,j] > weight_epsilon: # skip the next step if the synaptic connection = 0 for speed
+                    I[j] += cm[i,j] * inputs[i]
 
         
         
@@ -272,8 +291,8 @@ class SpikingNeuralNetwork(object):
                 # Update input vector I:
                 if i < (n_nodes_all - n_nodes_output):    
                     for j in xrange(0, n_nodes_hidden + n_nodes_output):
-                        if cm[i][j] > weight_epsilon: # skip the next step if the synaptic connection = 0 for speed
-                            I[j] += cm[i][j] * params.sign
+                        if cm[i,j] > weight_epsilon: # skip the next step if the synaptic connection = 0 for speed
+                            I[j] += cm[i,j] * params.sign
                     
                 
     
@@ -292,6 +311,9 @@ class SpikingNeuralNetwork(object):
         # 4. Return ALL pertinent variables:
         self.v = v
         self.u = u
+        self.fired_ids = fired_ids
+        
+        return self
 
         
         

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-To test new SNN class  
+To test the new SNN class and new task called matching rates
 """
 # Set PEAS paths:
 from conf import *    
@@ -21,7 +21,7 @@ from peas.methods.hyperneatsnn import HyperNEATSNNDeveloper, Substrate
 # from peas.methods.evolution import SimplePopulation
 # has pop_size = 100, elitism = True, tournaments selection = 3, uses 1 core, doesn't stop if a solution is found
 # Might have to write my own task object/class:
-from peas.tasks.mapping import MappingTask
+from peas.tasks.match_rates import MatchRatesTask
 from peas.networks.rnn import NeuralNetwork
 from peas.networks.snn import SpikingNeuralNetwork
 
@@ -96,10 +96,10 @@ if __name__ == '__main__':
                                    add_deltas=False,
                                    #feedforward=True,
                                    #sandwich=True,
-                                   node_type='tanh')
+                                   node_type='tonic_spike')
                                    
     # Create a task
-    task = MappingTask()                               
+    task = MatchRatesTask()                               
                                    
     results = pop.epoch(generations=generations,
                         evaluator=partial(evaluate, task=task, developer=developer),
