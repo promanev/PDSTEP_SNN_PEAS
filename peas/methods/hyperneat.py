@@ -169,6 +169,7 @@ class HyperNEATDeveloper(object):
                 network.flush()
                 weight = network.feed(coords, self.activation_steps)[conn_id]
                 cm[j, i] = weight
+                print "CPPN painted weight:",weight
         
         # Rescale the CM
         cm[np.abs(cm) < self.min_weight] = 0

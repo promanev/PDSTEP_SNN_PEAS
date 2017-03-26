@@ -133,10 +133,11 @@ class NEATGenotype(object):
             for i in xrange(self.inputs):
                 for j in xrange(self.inputs, self.inputs + self.outputs):
                     #: Tuples of (innov, from, to, weight, enabled)
-                    # w = np.random.normal(0.0, self.initial_weight_stdev)
-                    # self.conn_genes[(i, j)] = [innov, i, j, w, True]
+                    w = np.random.normal(0.0, self.initial_weight_stdev)
+                    self.conn_genes[(i, j)] = [innov, i, j, w, True]
                     # print("Conn.gene #%i. From node #%i, To node #%i, w = %d" % innov, i, j, w)
-                    
+                    """
+                    This code was used to learn code and illustrate its capabilities
                     if innov==0:
                         self.conn_genes[(i, j)] = [innov, i, j, 1, True]
                         print "Conn.gene #",innov,"From:",i,"To:",j,"Weight =",1.0
@@ -151,6 +152,7 @@ class NEATGenotype(object):
             # print "Conn genes: \n", self.conn_genes
             # picture_unique_id = np.random.normal(0.0, self.initial_weight_stdev)
             # NeuralNetwork(self).visualize('CPPN_topology_init_'+str(picture_unique_id)+'.png', inputs=self.inputs, outputs=self.outputs)
+                    """
         else:
             # If an initial topology is given, use that:
             fr, to = zip(*topology)
@@ -177,9 +179,13 @@ class NEATGenotype(object):
             and checked to ensure identical innovation numbers.
         """
         maxinnov = max(global_innov, max(cg[0] for cg in self.conn_genes.values()))
+        
+        """
+        LEARN & DEBUG:
         print "Attempting a mutation with prob_add_node=",self.prob_add_node
         print "Attempting a mutation with prob_add_conn=",self.prob_add_conn
         print "Attempting a mutation with prob_mutate_weight=",self.prob_mutate_weight
+        """
         
         if len(self.node_genes) < self.max_nodes and rand() < self.prob_add_node:
             possible_to_split = self.conn_genes.keys()
