@@ -32,6 +32,20 @@ def evaluate_individual((individual, evaluator)):
     else:
         raise Exception("Evaluator must be a callable or object" \
                         "with a callable attribute 'evaluate'.")
+    """
+    print "==== First evaluation ===="    
+    print individual.stats    
+    
+    if callable(evaluator):
+        individual.stats = evaluator(individual)
+    elif hasattr(evaluator, 'evaluate'):
+        individual.stats = evaluator.evaluate(individual)
+    else:
+        raise Exception("Evaluator must be a callable or object" \
+                        "with a callable attribute 'evaluate'.")
+    print "==== Second evaluation ===="    
+    print individual.stats   
+    """
     return individual
 
 
@@ -73,7 +87,7 @@ class SimplePopulation(object):
         self.solved_at  = None
         self.stats = defaultdict(list)
                 
-    def epoch(self, evaluator, generations, solution=None, reset=True, callback=None):
+    def epoch(self, evaluator, generations, solution=None, reset=True, callback=None, developer=None):
         """ Runs an evolutionary epoch 
 
             :param evaluator:    Either a function or an object with a function
@@ -84,9 +98,16 @@ class SimplePopulation(object):
         if reset:
             self._reset()
         
-        for _ in xrange(generations):
-            self._evolve(evaluator, solution)
+        for _ in xrange(generations):                
+                
+            self._evolve(evaluator, solution)                          
 
+            if np.mod(self.generation, 10)==0:
+
+                this_best = self.champions[-1]
+                best_net = developer.convert(this_best, (12,50,12))    
+                best_net.plot_behavior("Gen"+str(self.generation)+"_champ",save_flag = True)
+                
             self.generation += 1
 
             if self.verbose:
@@ -102,17 +123,21 @@ class SimplePopulation(object):
         
     
     def _evolve(self, evaluator, solution=None):
-        """ Runs a single step of evolution.
-        """
+        #Runs a single step of evolution.
         
         pop = self._birth()
         pop = self._evaluate_all(pop, evaluator)
         self._find_best(pop, solution) 
+        
+        # if print_best:
+        #     self._print_best(pop)
+            
         pop = self._reproduce(pop)        
         self._gather_stats(pop)
                             
         self.population = pop
 
+    
     def _birth(self):
         """ Creates a population if there is none, returns
             current population otherwise.
@@ -144,6 +169,14 @@ class SimplePopulation(object):
         ## CHAMPION
         self.champions.append(max(pop, key=lambda ind: ind.stats['fitness']))
         
+        # Print champion every 10 generations:
+        # if np.mod(self.generation, 10) == 0:
+            # best_indv = max(pop, key=lambda ind: ind.stats['fitness'])
+            # print "Best pop.member:", best_indv.stats
+            # print "Object indv has attributes:", dir(best_indv)
+            # temp_net = evaluator.developer.convert(best_indv, (12,50,12))
+            # temp_net.plot_behavior(save_flag = True)            
+        
         ## SOLUTION CRITERION
         if solution is not None:
             if isinstance(solution, (int, float)):
@@ -158,6 +191,16 @@ class SimplePopulation(object):
             
             if solved and self.solved_at is None:
                 self.solved_at = self.generation
+                
+    def _print_best(self, pop):
+        """ Finds the best individual, and adds it to the champions, also 
+            checks if this best individual 'solves' the problem.
+        """
+        ## CHAMPION
+        best_indv = max(pop, key=lambda ind: ind.stats['fitness'])
+        print "Best pop.member:", best_indv
+        # np.savetxt('cm.txt', cm, fmt = '%3.3f')
+                
                 
     def _reproduce(self, pop):
         """ Reproduces (and mutates) the best individuals to create a new population.

@@ -17,7 +17,8 @@ from ..networks.snn import SpikingNeuralNetwork
 class MatchRatesTask(object):
     
     # Target rates in spikes per 1000 ms:
-    target_firing_rates =  (100.0, 200.0)    
+    target_firing_rates =  (100.0, 200.0, 100.0, 200.0, 100.0, 200.0, 100.0, 200.0, 100.0, 200.0, 100.0, 200.0)    
+    # target_firing_rates =  (100.0, 200.0) 
     EPSILON = 1e-100
     
     def __init__(self):
@@ -31,23 +32,25 @@ class MatchRatesTask(object):
         #network.n_nodes_output       = 50
         #network.n_nodes_hidden       = 2
         # SNN parameters for this task specifically:
-        #network.feedforward_remove  = False
-        #network.self_remove         = True
-        #network.hyperforward_remove = True
-        #network.intralayer_remove   = True
-        #network.recurr_remove       = True
-        #network.hyperrecurr_remove  = True 
+        network.feedforward_remove  = False
+        network.self_remove         = False
+        network.hyperforward_remove = False
+        network.intralayer_remove   = False
+        network.recurr_remove       = False
+        network.hyperrecurr_remove  = False 
         # number of output nodes:
         # n_out_nodes = len(self.tfr)
         
         # n_in_nodes = n_out_nodes # this is due to the SNN being a closed loop - thus, input and output nodes should be in equal quantity
         
-        network.condition_cm()
+        # network.condition_cm()
         # number of simulation steps:
-        max_t = 2
+        max_t = 1000
 
         # first input to the network:
-        first_input = np.array((1.0, 1.0), dtype=float)
+        
+        first_input = np.array((1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0), dtype=float)
+        # first_input = np.array((1.0, 1.0), dtype=float)
         # Array to sum all of the spikes on output neurons:
         firings = np.zeros(network.n_nodes_output)
         # Array to estimate firing rates exhibited during the simulation on the output neurons:
@@ -71,6 +74,11 @@ class MatchRatesTask(object):
                 firings[out_idx] += outputs[out_idx]
             # print "Tick", tick, "Firings:", firings
             
+            # Print v and u of all neurons:
+            # print "===== Tick",tick,"====="    
+            # for idx in xrange(0, network.n_nodes_hidden + network.n_nodes_output):
+            #     print "Neuron[",idx,"]: v =", network.v[idx],"; u =", network.u[idx]
+                
         # estimate the firing rate on output neurons and calculate error:
         for out_idx in xrange(0, network.n_nodes_output):
             # This is when target and actual FR are normalized by 1000 ms:
@@ -97,5 +105,6 @@ class MatchRatesTask(object):
         
     def solve(self, network):
         return int(self.evaluate(network) > 0.9)
+    
                 
         

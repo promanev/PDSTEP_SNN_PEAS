@@ -19,6 +19,12 @@ class HyperNEATSNNDeveloper(rnnDeveloper):
         
         cppn_network = self._convert_and_validate_cppn(cppn_network)
         cm = self._make_connection_matrix(cppn_network)
+        # print "CM after HyperNEAT convert"
+        # for row in xrange(0,cm.shape[0]):
+        #     print cm[row]
+        # print "==============================="
+        # cppn_network.visualize_cppn("CPPN.png",inputs=6,outputs=1,plot_bias=0)
+        
         # print "cm is a square matrix with a side of",cm.shape[0]
         # print "HyperNEAT: cm=",cm
         snn_network = SpikingNeuralNetwork().from_matrix(cm, self.node_type, snn_topology)

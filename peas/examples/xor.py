@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 ### IMPORTS ###
+from peas.conf import * 
 import sys, os
 from functools import partial
 from collections import defaultdict

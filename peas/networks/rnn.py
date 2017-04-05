@@ -5,6 +5,7 @@
 
 import sys
 import numpy as np
+# from ..peas.methods.graphviz_plot import graphviz_plot as gpv
 import graphviz_plot as gpv
 np.seterr(over='ignore', divide='raise')
 

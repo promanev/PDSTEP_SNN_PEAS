@@ -104,6 +104,9 @@ class Substrate(object):
                 else:
                     conn = np.hstack((fr, to))
                 self._connection_list.append(((i, j), conn, conn_id, expr_id))
+                # print "Conn =",conn
+                # print "Conn_id =", conn_id
+                # print "Expr_id =", expr_id
 
         return self._connection_list
 
@@ -126,7 +129,7 @@ class HyperNEATDeveloper(object):
             :param min_weight:     The minimum CPPN output value that will lead to an expressed connection.
             :param sandwich:       Whether to turn the output net into a sandwich network.
             :param feedforward:       Whether to turn the output net into a feedforward network.
-            :param node_type:      What node type to assign to the output nodes.
+            :param node_type:      What node type to assign to the output nodes (RP: these are the node types that are assigned to ANN/SNN, not CPPN).
         """
         self.substrate             = substrate
         self.sandwich              = sandwich
@@ -162,6 +165,8 @@ class HyperNEATDeveloper(object):
             
         for (i,j), coords, conn_id, expr_id in self.substrate.get_connection_list(self.add_deltas):                
             expression = True
+            # print "Conn_ID =", conn_id
+            # print "Expr_ID =", expr_id
             if expr_id is not None:
                 network.flush()
                 expression = network.feed(coords, self.activation_steps)[expr_id] > 0
@@ -169,15 +174,94 @@ class HyperNEATDeveloper(object):
                 network.flush()
                 weight = network.feed(coords, self.activation_steps)[conn_id]
                 cm[j, i] = weight
-                print "CPPN painted weight:",weight
+                # print "Using coords",coords
+                # print "CPPN painted weight:",weight
         
-        # Rescale the CM
-        cm[np.abs(cm) < self.min_weight] = 0
+        cm = np.transpose(cm)
+        cm[cm < 0.01] = 0.0
+        # np.set_printoptions(precision=1)
+        # print "Min weight =", self.min_weight
+        # print "Weight range =", self.weight_range
+        # print "==============================="
+        # print "Raw CM:"
+        # for row in xrange(0,cm.shape[0]):
+        #     print cm[row]
+        # print "===============================" 
+        # Rescale the CM from its current values into the preset weight range
+        # 
+        # Determine current CM's min and max:
+        cm_min = cm.min()
+        cm_max = cm.max()
+        # print "Raw CM has max =",cm_max,"; min=", cm_min
+        for i in xrange(0, cm.shape[0]):
+            for j in xrange(0, cm.shape[0]):
+                cm[i,j] = self.weight_range * (cm[i,j] - cm_min) / (cm_max - cm_min) + self.min_weight
+                
+        # print "==============================="
+        # print "Rescaled CM:"
+        # for row in xrange(0,cm.shape[0]):
+        #     print cm[row]
+        # print "==============================="         
+        
+        """
+        np.set_printoptions(precision=1)
+        print "Min weight =", self.min_weight
+        print "Weight range =", self.weight_range
+        print "==============================="
+        print "Raw CM:"
+        for row in xrange(0,cm.shape[0]):
+            print cm[row]
+        print "==============================="   
+        """
+        # cm = np.abs(cm)
+        """
+        print "CM after taking the ABS:"
+        for row in xrange(0,cm.shape[0]):
+            print cm[row]
+        print "===============================" 
+        """
+        # cm[cm < self.min_weight] = 0
+        """
+        print "CM after setting small weights to 0:"
+        for row in xrange(0,cm.shape[0]):
+            print cm[row]
+        print "==============================="    
+        """
+        
+        """
         cm -= (np.sign(cm) * self.min_weight)
+        
+        print "CM after subtracting min. weights:"
+        for row in xrange(0,cm.shape[0]):
+            print cm[row]
+        print "==============================="
+        
         cm *= self.weight_range / (self.weight_range - self.min_weight)
         
+        print "CM after rescaling:"
+        for row in xrange(0,cm.shape[0]):
+            print cm[row]
+        print "==============================="
+        """
+        
         # Clip highest weights
-        cm = np.clip(cm, -self.weight_range, self.weight_range)
+        # cm = np.clip(cm, -self.weight_range, self.weight_range)
+        # cm = np.clip(cm, self.min_weight, self.weight_range)
+        """
+        print "CM after clipping:"
+        for row in xrange(0,cm.shape[0]):
+            print cm[row]
+        print "==============================="
+        """
+        
+        
+        """
+        print "CM after transpose:"
+        for row in xrange(0,cm.shape[0]):
+            print cm[row]
+        print "==============================="
+        """
+        
         return cm
 
     def convert(self, network):

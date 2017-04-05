@@ -55,9 +55,9 @@ class NEATGenotype(object):
                  stdev_mutate_bias=0.5,
                  stdev_mutate_response=0.5,
                  weight_range=(-50., 50.),
-                 distance_excess=1.0,
-                 distance_disjoint=1.0,
-                 distance_weight=0.4):
+                 distance_excess=1.0, # c1 set to a small pop ~ 150 nets
+                 distance_disjoint=1.0, # c2
+                 distance_weight=0.4): # c3
         """ Refer to the NEAT paper for an explanation of these parameters.
         """
 
