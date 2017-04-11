@@ -208,13 +208,14 @@ class SpikingNeuralNetwork(object):
         n_nodes_sim = n_nodes_hidden + n_nodes_output
         
         # init variables u and v:    
-        self.v = np.ones(n_nodes_sim) * (-65.0)
+        self.v = np.zeros(n_nodes_sim)
         self.u = np.zeros(n_nodes_sim)
         # Create u values based on the neuron types. 
         # Need to skip input neurons as they are not
         # simulated:
         for i in xrange(0, n_nodes_sim):
             params = self.node_types[i]()
+            self.v[i] = params.c
             self.u[i] = self.v[i] * params.b
         return self
     
@@ -345,7 +346,8 @@ class SpikingNeuralNetwork(object):
         # cannot do this as it is assumed that there are no recurrent connections.
         I = np.zeros(n_nodes_hidden + n_nodes_output)
         
-        
+        # print "Network received inputs:",inputs
+        # print "Init I=",I
         # 1. Fill I with values from "inputs" using weights that connect input neurons with hidden:
         for i in xrange(0, n_nodes_input):
             for j in xrange(n_nodes_input, n_nodes_input + n_nodes_hidden):
@@ -354,23 +356,23 @@ class SpikingNeuralNetwork(object):
                 # print "CM[",i,",",j,"]=",cm[i,j]
                 if cm[i,j] > weight_epsilon: # skip the next step if the synaptic connection = 0 for speed
                     I[adj_j] += cm[i,j] * inputs[i]
-                    # print "Incorated input, I[",adj_j,"]=",I[adj_j]
+                    # print "I took input, I[",adj_j,"]=",I[adj_j]
         
+        # print "I_hid after all inputs were processed:"
         # for k in xrange(0,len(I)):
-        #     print "I[",k,"]=",I[k]
+        #      print "I[",k,"]=",I[k]
         
-        # 2. Detect which neurons spike this time step (which did exceed threshold
-        # during the last time step).
-        # 
-        # Iterating over hidden and output neurons: 
-        # print "v has size ", len(v)    
-        # print "n_nodes_input =", n_nodes_input, "n_nodes_all =", n_nodes_all                                               
+        # 2. Detect spikes in the HIDDEN layer and update the influence vector I.
+        #  
+        # Iterating over hidden and output neurons:                                               
         for i in xrange(n_nodes_input, n_nodes_all):
             # Since there are no simulated input nodes, need to adjust index
             # for iterating through neurons:
             adj_i = i - n_nodes_input
             # print "i =",i,"adj_i =", adj_i
+            # print "v[",adj_i,"]=",v[adj_i],"; u[",adj_i,"]=",u[adj_i]
             if v[adj_i]>30.0:
+                # print "Registered a spike in",i,"-th neuron, v[",adj_i,"]=",v[adj_i]   
                 # Record these data for export out of the function:
                 fired_ids[adj_i] = 1
                 # get this node's params:
@@ -383,21 +385,21 @@ class SpikingNeuralNetwork(object):
                 u[adj_i]+= params.d
                 # print "Reset v to",params.c," (check:",v[adj_i],"); u by", params.d," (check:",u[adj_i],")"
                 
-                # !!!ONLY for HIDDEN neurons (because output neurons are assumed to not have connections to other output 
-                # neurons or hidden neurons) !!!
-                # Update input vector I:
-                if i < (n_nodes_all - n_nodes_output):
-                    # Hidden neurons influence other hidden neurons and output:
-                    for j in xrange(n_nodes_input, n_nodes_all):
-                        if cm[i,j] > weight_epsilon: # skip the next step if the synaptic connection = 0 for speed
-                            # Since j only iterates over hidden and output neurons, 
-                            # need to adjust it for I (it only contains values 
-                            # for hidden and output):
-                            adj_j = j - n_nodes_input    
-                            # print "j =",j,"adj_j =", adj_j
-                            I[adj_j] += cm[i,j] * params.sign
-                            # print "Incorated firing, I[",adj_j,"]=",I[adj_j]
+                # Propagate spikes to all other neurons
+                for j in xrange(n_nodes_input, n_nodes_all):
+                    # print "CM[",i,",",j,"]=",cm[i,j]
+                    # print "Sign of the pre-synaptic neuron is", params.sign
+                    # skip the next step if the synaptic connection = 0 for speed:
+                    if cm[i,j] > weight_epsilon: 
+                        adj_j = j - n_nodes_input    
+                        # print "j =",j,"adj_j =", adj_j
+                        I[adj_j] += cm[i,j] * params.sign
+                            
+                        # print "Propagating spike to",adj_j,"neuron"
+                        # print "Conn. weight is",cm[i,j]
+                        # print "I took a spike, I[",adj_j,"]=",I[adj_j] 
         
+        # print "I after all spikes were processed:"
         # for k in xrange(0,len(I)):
         #     print "I[",k,"]=",I[k]        
         
@@ -407,7 +409,8 @@ class SpikingNeuralNetwork(object):
             adj_i = i - n_nodes_input
             # print "Updating v and u. i =",i,"adj_i =", adj_i
             # get this node's params:
-            params = node_types[adj_i]()
+            params = node_types[adj_i]()                
+                
             # Numerical integration using forward Euler method wiht step 0.5 for differential equations governing v and u:
             for tick in xrange(0,2):
                 # print "Before integrating. v[",adj_i,"]=",v[adj_i]
@@ -420,10 +423,10 @@ class SpikingNeuralNetwork(object):
                 # print "After integrating. v[",adj_i,"]=",v[adj_i]
                 
             u[adj_i] += params.a * (params.b * v[adj_i] - u[adj_i]) # It's unclear from Izhikevich's code if u should also updated in two steps or if it's updated once, after v was updated
-            # print "Tick",tick,": v[",adj_i,"]=",v[adj_i],"; u[",adj_i,"]=",u[adj_i]
+            # print "v[",adj_i,"]=",v[adj_i],"; u[",adj_i,"]=",u[adj_i]
             # print "Neuron #",i,"; v=",v[adj_i]
         
-
+        # print "Fired_ids =", fired_ids
         # 4. Return ALL pertinent variables:
         self.v = v
         self.u = u
@@ -487,22 +490,19 @@ class SpikingNeuralNetwork(object):
         spikes = np.zeros((max_t, n_nodes_hidden + n_nodes_output))
         # Array to record all of the spikes of hidden and output neurons each tick in [neuron_id, tick] format:
         
-        # neuron_ids = np.empty((0,))
-        # spike_times = np.empty((0,))
-        
         # Array with first inputs:
         first_input = np.ones(n_nodes_input) 
-        # print "First input =", first_input
+
         # Save connection matrix:
-        # print "Connection matrix:"
-        # print cm
         if save_cm:
             np.savetxt(filename+'_cm.txt', cm, fmt = '%3.3f')
         
         fired_this_tick = np.zeros(1)
         ticks = np.zeros(1)
-        # print "Init fired_this_tick:", fired_this_tick
-        # print "Init ticks:", ticks
+        
+        # Create the matrix to hold all of the v's:
+        if save_v:
+            archive_v = np.zeros((max_t, n_nodes_hidden + n_nodes_output))    
         
         # Run the simulation:
         for tick in xrange(0, max_t):
@@ -514,99 +514,46 @@ class SpikingNeuralNetwork(object):
                 self = self.feed(outputs)
             # Grab the output
             outputs = self.fired_ids[-n_nodes_output:]
-            # print "Tick",tick,"SNN state:",self.fired_ids
-            # print "Tick",tick,"Outputs:", outputs
-            # for a in xrange(0,len(outputs)):
-            #     print "Outputs[",a,"] =",outputs[a]
             
+            # save the current state:
+            if save_v:    
+                archive_v[tick] = self.v
+                
             # record the state of the hidden and output neurons:
             spikes[tick] = self.fired_ids  
-            # print "Recorded spikes:", spikes[tick]
             
-            # do the same in 2-array format:
-
-            # firings_2D = np.zeros((1,2))
-            # counter = 0
             for temp_idx2 in xrange(0, n_nodes_hidden + n_nodes_output):
-                # print "Fire_ids[",temp_idx2,"] =",self.fired_ids[temp_idx2]
-                # print "Neuron #", temp_idx2, "v =", self.v[temp_idx2], "Fired_ids =",self.fired_ids[temp_idx2]
-                # print "Indices: tick=", tick, "; temp_idx2 =", temp_idx2
                 if spikes[tick, temp_idx2] == 1.0:
-                    # np.append(firings_2D, [tick, temp_idx2])
                     fired_this_tick = np.append(fired_this_tick, float(temp_idx2))
                     ticks = np.append(ticks, float(tick))
-                    
-                    # print "Firings recorded the pair:", [tick, temp_idx2]
-                    # print "Spikes[",tick,",",temp_idx2,"] =", spikes[tick, temp_idx2]
-                    # print "Updated firings_2D =", firings_2D
-                    # print "Updated fired_this_tick =", fired_this_tick
-                    # print "Updated ticks =", ticks
-                """
-                if self.fired_ids[temp_idx2] > 0.0:
-                    np.hstack((fired_this_tick, temp_idx2))
-                    np.hstack((ticks, tick))
-                    # print "Neuron #", temp_idx2, "v =", self.v[temp_idx2], "Fired_ids =",self.fired_ids[temp_idx2]
-                    # print "Fired_ids[",temp_idx2,"]=",self.fired_ids[temp_idx2], "ticks =", ticks[temp_idx2]
-                    # print "Fired_this_tick[",counter,"]=",fired_this_tick[counter]
-                    # print "Ticks[",counter,"]=",ticks[counter]
-                    counter += 1
-                    # print "Inside IF"
-                """    
-            
-            """
-            # fired_this_tick = self.fired_ids[self.fired_ids>0.0]  
-            if fired_this_tick:
-                # print type(fired_this_tick)
-                print "Fired this tick:", fired_this_tick
-                print "Ticks:", ticks
-                np.hstack((neuron_ids, fired_this_tick))
-                np.hstack((spike_times, ticks))
-                print "Neuron_ids:", neuron_ids
-                print "Spike_times:", spike_times
-                # for temp_idx in xrange(0, len(fired_this_tick)):
-                #     spike_times.append(tick)
-            # spike_times.append(np.full((len(fired_this_tick),),tick, dtype='float'))
-            # for temp_idx in xrange(0, len(fired_this_tick)):
-            #     spike_times.append(tick)
-            # print "Neuron_ids =",neuron_ids
-            # print "Spike_times =",spike_times
-            """
             
             # add new spikes fired on output neurons:
             for out_idx in xrange(0, n_nodes_output):
-                firings[out_idx] += outputs[out_idx]          
+                firings[out_idx] += outputs[out_idx] 
                 
-            # print "Tick", tick, "Firings:", firings
-        
-        # print "Firings =", firings_2D
-        # print "firings_2D[0] =",firings_2D[:,0]
-        # print "Sum of firings_2D[0]", np.sum(firings_2D[:,0])
-        # print "Ticks =", ticks
-        # print "Sum of ticks =", np.sum(ticks)
+        # Save the archive of v's:
+        if save_v:
+            np.savetxt(filename+'_v.txt', archive_v, fmt = '%8.3f')        
+                
         # Print the firing rates:
         for out_idx in xrange(0, n_nodes_output):
             print "Output neuron #", out_idx, "has firing rate =", firings[out_idx] 
         
-        # if np.sum(firings_2D[:,0])>0.0:
+        # plot spikes only if there are spikes:
         if np.sum(ticks) > 0.0:    
-            # print "Length of neuron_ids",len(neuron_ids)
-            # print "Length of spike_times",len(spike_times)
             # Record spikes as a plot and .txt file:
-            # plb.figure(figsize=(18.0,15.0))
-            plb.figure()
+            plb.figure(figsize=(12.0,10.0))
+            # plb.figure()
             # time_array = np.arange(max_t)
             plb.title('Spikes')
             plb.xlabel('Time, ms')
             plb.ylabel('Neuron #')
-            # plb.plot(spike_times, neuron_ids,'k.')
-            # plb.plot(firings_2D[:,0], firings_2D[:,1],'k.')
             plb.plot(ticks, fired_this_tick,'k.')
             fig1 = plb.gcf()
             axes = plb.gca()
             axes.set_ylim([0,n_nodes_hidden + n_nodes_output])
             axes.set_xlim([0,max_t])
-            plb.show()
-            
+            plb.show()          
         
             if save_spikes:
                 fig1.savefig(filename+"_spikes.png", dpi=300) 
@@ -623,7 +570,7 @@ class SpikingNeuralNetwork(object):
 if __name__ == '__main__':
     # import doctest
     # doctest.testmod(optionflags=doctest.ELLIPSIS)
-    a = SpikingNeuralNetwork().from_matrix(np.array([[0,0,0],[0,0,0],[1,1,0]]))
-    print a.cm_string()
-    print a.feed(np.array([1,1]), add_bias=False)
-    
+    # a = SpikingNeuralNetwork().from_matrix(np.array([[0,0,0],[0,0,0],[1,1,0]]))
+    # print a.cm_string()
+    # print a.feed(np.array([1,1]), add_bias=False)
+    print "SNN class main"

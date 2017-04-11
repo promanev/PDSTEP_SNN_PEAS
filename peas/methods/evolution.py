@@ -87,7 +87,14 @@ class SimplePopulation(object):
         self.solved_at  = None
         self.stats = defaultdict(list)
                 
-    def epoch(self, evaluator, generations, solution=None, reset=True, callback=None, developer=None):
+    def epoch(self, evaluator, 
+                    generations, 
+                    solution=None, 
+                    reset=True, 
+                    callback=None, 
+                    developer=None, 
+                    snn_topology = (2, 5, 2),
+                    save_intermediate = False):
         """ Runs an evolutionary epoch 
 
             :param evaluator:    Either a function or an object with a function
@@ -102,11 +109,14 @@ class SimplePopulation(object):
                 
             self._evolve(evaluator, solution)                          
 
-            if np.mod(self.generation, 10)==0:
+            if save_intermediate:
+                if np.mod(self.generation, 10)==0:
 
-                this_best = self.champions[-1]
-                best_net = developer.convert(this_best, (12,50,12))    
-                best_net.plot_behavior("Gen"+str(self.generation)+"_champ",save_flag = True)
+                    this_best = self.champions[-1]
+                    best_net = developer.convert(this_best, snn_topology)    
+                    best_net.plot_behavior("Gen"+str(self.generation)+"_champ",
+                                       save_cm = True, save_spikes = True, 
+                                       save_v = True)
                 
             self.generation += 1
 
@@ -128,9 +138,6 @@ class SimplePopulation(object):
         pop = self._birth()
         pop = self._evaluate_all(pop, evaluator)
         self._find_best(pop, solution) 
-        
-        # if print_best:
-        #     self._print_best(pop)
             
         pop = self._reproduce(pop)        
         self._gather_stats(pop)
@@ -169,14 +176,6 @@ class SimplePopulation(object):
         ## CHAMPION
         self.champions.append(max(pop, key=lambda ind: ind.stats['fitness']))
         
-        # Print champion every 10 generations:
-        # if np.mod(self.generation, 10) == 0:
-            # best_indv = max(pop, key=lambda ind: ind.stats['fitness'])
-            # print "Best pop.member:", best_indv.stats
-            # print "Object indv has attributes:", dir(best_indv)
-            # temp_net = evaluator.developer.convert(best_indv, (12,50,12))
-            # temp_net.plot_behavior(save_flag = True)            
-        
         ## SOLUTION CRITERION
         if solution is not None:
             if isinstance(solution, (int, float)):
@@ -191,16 +190,16 @@ class SimplePopulation(object):
             
             if solved and self.solved_at is None:
                 self.solved_at = self.generation
-                
+    """            
     def _print_best(self, pop):
-        """ Finds the best individual, and adds it to the champions, also 
-            checks if this best individual 'solves' the problem.
-        """
+        # Finds the best individual, and adds it to the champions, also 
+        # checks if this best individual 'solves' the problem.
+        
         ## CHAMPION
         best_indv = max(pop, key=lambda ind: ind.stats['fitness'])
         print "Best pop.member:", best_indv
         # np.savetxt('cm.txt', cm, fmt = '%3.3f')
-                
+    """            
                 
     def _reproduce(self, pop):
         """ Reproduces (and mutates) the best individuals to create a new population.

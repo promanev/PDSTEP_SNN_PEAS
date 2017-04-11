@@ -36,12 +36,12 @@ def solve(individual, task, developer, snn_topology):
 if __name__ == '__main__':
         
     #### === SETTINGS === ###    
-    generations = 11
-    popsize = 3
+    generations = 100
+    popsize = 50
     
         
     n_nodes_input        = 12
-    n_nodes_hidden       = 50
+    n_nodes_hidden       = 100
     n_nodes_output       = 12
     
     """
@@ -52,7 +52,7 @@ if __name__ == '__main__':
     
     #### === HOUSEKEEPING === ###
     exp_id = 'disemb_'+str(n_nodes_input)+'i_'+str(n_nodes_hidden)+'h_'+str(n_nodes_output)+'o_'+'pop' \
-             +str(popsize)+'_gen'+str(generations)+'_test_run2'
+             +str(popsize)+'_gen'+str(generations)+'_test_run9'
     script_path = os.getcwd()   
     exp_path = script_path + "\\SNN_disembodied_exps\\" + exp_id
     if not os.path.exists(exp_path):
@@ -78,16 +78,26 @@ if __name__ == '__main__':
     # Setup a topology of the substrate CHANGE THIS ACCORDINGLY:
     substrate = Substrate()
     
+    # Substrate in [-1,1] coordinate frame
+    substrate.add_nodes([(x, y, 1) for y in np.linspace(-1.0, 1.0, 2)
+                                   for x in np.linspace(-1.0, 1.0, 6)], 'input')
+    substrate.add_nodes([(x, y, 2) for y in np.linspace(-1.0, 1.0, 5)
+                                   for x in np.linspace(-1.0, 1.0, 20)], 'hidden')
+    substrate.add_nodes([(x, y, 3) for y in np.linspace(-1.0, 1.0, 2)
+                                   for x in np.linspace(-1.0, 1.0, 6)], 'output')
     
+    """
+    # Substrate in only positive coordinate frame [1, 10]
     substrate.add_nodes([(x, y, 1) for y in np.linspace(1.0, 10.0, 2)
                                    for x in np.linspace(1.0, 10.0, 6)], 'input')
     substrate.add_nodes([(x, y, 2) for y in np.linspace(1.0, 10.0, 5)
                                    for x in np.linspace(1.0, 10.0, 10)], 'hidden')
     substrate.add_nodes([(x, y, 3) for y in np.linspace(1.0, 10.0, 2)
                                    for x in np.linspace(1.0, 10.0, 6)], 'output')
-    
+    """
     
     """
+    # Substrate for a smaller network used for debugging
     substrate.add_nodes([(x, 1, 1) for x in np.linspace(1.0, 10.0, 2)], 'input')
     substrate.add_nodes([(x, y, 2) for y in np.linspace(1.0, 10.0, 1)
                                    for x in np.linspace(1.0, 10.0, 5)], 'hidden')
@@ -96,12 +106,14 @@ if __name__ == '__main__':
     
     substrate.add_connections('input','hidden')
     substrate.add_connections('hidden','output')
+    substrate.add_connections('hidden','hidden')
+    substrate.add_connections('output','output')
 
     # CPPN settings:
     geno_kwds = dict(feedforward=False, 
                      inputs=6,
                      outputs=1,
-                     weight_range=(-10.0, 10.0),
+                     # weight_range=(-10.0, 10.0),
                      prob_add_node=0.03,
                      prob_add_conn=0.3,
                      prob_mutate_weight=0.8,
@@ -135,7 +147,7 @@ if __name__ == '__main__':
                                       add_deltas=False,
                                       sandwich=False,
                                       feedforward=False,                            
-                                      weight_range=10.0,
+                                      weight_range=15.0,
                                       min_weight=0.0,
                                       node_type=node_types)
                                    
@@ -146,6 +158,8 @@ if __name__ == '__main__':
                         evaluator=partial(evaluate, task=task, developer=developer, snn_topology=snn_topology),
                         solution=partial(solve, task=task, developer=developer, snn_topology=snn_topology),
                         developer=developer,
+                        snn_topology = snn_topology,
+                        save_intermediate = True,
                         )  
     
     # plot the fitness plot:
@@ -156,7 +170,7 @@ if __name__ == '__main__':
         best_fit_count += 1
         
     import pylab as plb
-    best_fit_fig = plb.figure()    
+    best_fit_fig = plb.figure(figsize=(12.0,10.0))    
     plb.title('Best fitness')
     plb.xlabel('Generation')
     plb.ylabel('Fitness')
